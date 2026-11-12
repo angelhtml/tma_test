@@ -96,7 +96,63 @@ body {
 <link rel="manifest" href="index.manifest.json">
 
 	</head>
+
+
+
+	
+
+
+	
 	<body>
+		<!-- Put this just before </body> in your EXPORTED index.html -->
+<button id="ad-test-btn" style="position:fixed;bottom:20px;right:20px;z-index:2147483647;padding:14px 20px;font-size:16px;background:#fff;color:#000;border:2px solid #000;border-radius:8px;">
+  Watch Ad Test
+</button>
+
+
+		<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+
+<script>
+(function () {
+  var btn = document.getElementById("ad-test-btn");
+
+  btn.onclick = function () {
+    if (typeof window.Adsgram === "undefined") {
+      btn.textContent = "SDK NOT LOADED (blocked?)";
+      return;
+    }
+    try {
+      var AdController = window.Adsgram.init({
+        blockId: "59304",
+        debug: true
+      });
+      btn.textContent = "Loading ad...";
+      AdController.show()
+        .then(function (result) {
+          console.log("AD SUCCESS", result);
+          btn.textContent = "AD SUCCESS ✅";
+        })
+        .catch(function (error) {
+          console.error("AD ERROR", error);
+          btn.textContent = "AD ERROR ❌";
+        });
+    } catch (e) {
+      console.error("INIT ERROR", e);
+      btn.textContent = "INIT ERROR ❌";
+    }
+  };
+})();
+</script>
+
+
+
+
+
+
+
+
+
+		
 		<canvas id="canvas">
 			Your browser does not support the canvas tag.
 		</canvas>
@@ -248,37 +304,6 @@ const engine = new Engine(GODOT_CONFIG);
 
 
 
-
-
-
-
-
-		<script>
-window.addEventListener("load", function () {
-  // 1. Initialize with your real blockId
-  const AdController = window.Adsgram.init({
-    blockId: "59304",
-    debug: true
-  });
-
-  // 2. Create a test button
-  const btn = document.createElement("button");
-  btn.textContent = "Watch Ad Test";
-  btn.style.cssText = "position:fixed;bottom:20px;right:20px;z-index:99999;padding:12px;font-size:16px;z-index:999;zindex:999;";
-  document.body.appendChild(btn);
-
-  // 3. Call show() when user clicks
-  btn.onclick = function () {
-    AdController.show()
-      .then((result) => {
-        console.log("AD SUCCESS", result);
-      })
-      .catch((error) => {
-        console.error("AD ERROR", error);
-      });
-  };
-});
-</script>
 		
 	</body>
 </html>
