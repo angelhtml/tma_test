@@ -4,6 +4,7 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
 		<title>TMA</title>
+		<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 		<style>
 html, body, #canvas {
 	margin: 0;
@@ -215,7 +216,25 @@ const engine = new Engine(GODOT_CONFIG);
 		}, displayFailureNotice);
 	}
 }());
+
+
+			const AdController = window.Adsgram.init({ 
+    blockId: "59304" // Replace with your actual block ID
+});
+
+
+
+			AdController.show().then((result) => {
+    // The ad was watched to the end (or closed in interstitial format)
+    // Add your code here to reward the player, e.g., give a coin or extra life
+    window.alert("Ad watched successfully", result);
+}).catch((result) => {
+    // The user skipped the ad or an error occurred
+    // Handle this case, e.g., show a message "Ad not completed"
+    window.alert("Ad was not completed", result);
+});
 		</script>
+		
 	</body>
 </html>
 
