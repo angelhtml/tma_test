@@ -227,12 +227,14 @@ const engine = new Engine(GODOT_CONFIG);
 			AdController.show().then((result) => {
     // The ad was watched to the end (or closed in interstitial format)
     // Add your code here to reward the player, e.g., give a coin or extra life
-    window.alert("Ad watched successfully", result);
+    console.log("Ad watched successfully", result);
 }).catch((result) => {
     // The user skipped the ad or an error occurred
     // Handle this case, e.g., show a message "Ad not completed"
-    window.alert("Ad was not completed", result);
+    console.log("Ad was not completed", result);
 });
+
+			console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 		</script>
 		
 	</body>
