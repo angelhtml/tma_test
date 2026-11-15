@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Godot Game</title>
 
-    <!-- Telegram WebApp script (required) -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
@@ -17,12 +16,11 @@
             overflow: hidden;
             background: #000;
         }
-        /* The button is forced above the Godot canvas */
         #reward-ad-btn {
             position: fixed;
             bottom: 24px;
             right: 24px;
-            z-index: 2147483647; /* max possible */
+            z-index: 2147483647;
             padding: 14px 22px;
             font-size: 16px;
             font-family: Arial, sans-serif;
@@ -37,7 +35,6 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
-        /* Small on-screen status label so you can see what happens on mobile */
         #ad-status {
             position: fixed;
             top: 8px;
@@ -56,27 +53,23 @@
 </head>
 <body>
 
-    <!-- 1) Create the UI FIRST so it exists even if the SDK fails -->
     <button id="reward-ad-btn">Watch Ad for Reward</button>
     <div id="ad-status">initializing…</div>
 
-    <!-- 2) Godot will inject its canvas here (the export adds it) -->
-    <!--    Do not remove the Godot engine script tag that Godot added below -->
-
-    <!-- 3) Load Adexium SDK AFTER the button exists -->
+    <!-- Adexium SDK loads AFTER the button exists -->
     <script src="https://cdn.adexium.tech/assets/js/tg-ads-co-widget.min.js"></script>
 
     <script>
     (function () {
         "use strict";
 
-        var WIDGET_ID = "718ba235-5b3f-484a-9c4b-b21e0067ec8b"; // <-- CHANGE THIS
-        var DEBUG     = true;                   // <-- CHANGE THIS to false for production
+        var WIDGET_ID = "YOUR_WIDGET_ID_HERE"; // <-- CHANGE THIS
+        var DEBUG     = true;                   // <-- set to false for production
 
         var btn    = document.getElementById("reward-ad-btn");
         var status = document.getElementById("ad-status");
         var adexiumAds = null;
-        var adReady = false;
+        var currentAd = null;   // <-- stores the received ad object
         var isShowing = false;
 
         function log(msg) {
@@ -116,7 +109,6 @@
                 debug: DEBUG
             });
 
-            // Prefetch an ad so it's ready when the player clicks
             adexiumAds.requestAd("interstitial");
             log("SDK init OK — requesting ad…");
         } catch (e) {
@@ -127,17 +119,19 @@
         }
 
         // --- Events ---
+
+        // FIXED: store the received ad object
         adexiumAds.on("adReceived", function (ad) {
-            adReady = true;
+            currentAd = ad;
             setBtn("Watch Ad for Reward", false);
             log("Ad received ✅ (ready to show)");
+            console.log("[ADE] ad object:", ad);
         });
 
         adexiumAds.on("noAdFound", function () {
-            adReady = false;
+            currentAd = null;
             setBtn("No ad available", false);
             log("No ad found (retry in a few seconds)");
-            // Try again after 15s
             setTimeout(function () {
                 try { adexiumAds.requestAd("interstitial"); } catch (e) {}
                 setBtn("Watch Ad for Reward", false);
@@ -146,11 +140,10 @@
 
         adexiumAds.on("adClosed", function () {
             isShowing = false;
+            currentAd = null;
             setBtn("Watch Ad for Reward", false);
             log("Ad closed — GRANT REWARD HERE 🎁");
             // === PUT YOUR REWARD LOGIC HERE ===
-            // Example: call a Godot function via JavaScriptBridge
-            // window.rewardPlayer && window.rewardPlayer();
 
             // Prefetch the next ad
             setTimeout(function () {
@@ -161,32 +154,41 @@
         // --- Button click ---
         btn.addEventListener("click", function () {
             if (isShowing) return;
-            if (!adReady) {
+
+            if (!currentAd) {
                 log("No ad ready yet — requesting…");
                 try { adexiumAds.requestAd("interstitial"); } catch (e) {}
                 return;
             }
+
             isShowing = true;
             setBtn("Showing ad…", true);
+
             try {
-                adexiumAds.displayAd();
+                // FIXED: pass the stored ad object
+                adexiumAds.displayAd(currentAd);
             } catch (e) {
                 console.error(e);
-                isShowing = false;
-                setBtn("Watch Ad for Reward", false);
-                log("DISPLAY ERROR: " + e.message);
+                // Fallback: some SDK versions expect displayAd() with no arg
+                try {
+                    adexiumAds.displayAd();
+                } catch (e2) {
+                    console.error(e2);
+                    isShowing = false;
+                    currentAd = null;
+                    setBtn("Watch Ad for Reward", false);
+                    log("DISPLAY ERROR: " + e.message);
+                }
             }
         });
 
-        // Enable the button
         setBtn("Watch Ad for Reward", false);
         log("Button ready — click to test");
     })();
     </script>
 
-    <!-- ⚠️ IMPORTANT: Godot's own engine <script> tag goes BELOW this comment. -->
-    <!-- When you export, Godot appends its startup script here. -->
-    <!-- Make sure you keep Godot's script tag in the file. -->
+    <!-- Godot's own engine <script> tag goes BELOW this comment. -->
+    <!-- When you export, Godot appends its startup script here. Keep it. -->
 
 </body>
 </html>
