@@ -235,7 +235,17 @@ const engine = new Engine(GODOT_CONFIG);
 <script type="text/javascript" src="https://cdn.adexium.tech/assets/js/tg-ads-co-widget.min.js"></script>
 
 <!-- Your Game's Button -->
-<button id="reward-ad-btn" style="position:fixed; bottom:20px; right:20px; z-index:2147483647; padding:14px; font-size:16px;">
+<button id="reward-ad-btn" style="
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2147483647; /* Maximum possible z-index */
+  padding: 14px;
+  font-size: 16px;
+  background: #fff;
+  color: #000;
+  border: 2px solid #000;
+">
   Watch Ad for Reward
 </button>
 
