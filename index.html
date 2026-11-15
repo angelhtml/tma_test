@@ -231,56 +231,39 @@ const engine = new Engine(GODOT_CONFIG);
 
 
 
-<!-- Load Adexium SDK -->
+<!-- Load the Adexium Mini App Widget SDK -->
 <script type="text/javascript" src="https://cdn.adexium.tech/assets/js/tg-ads-co-widget.min.js"></script>
-
-<!-- Your Game's Button -->
-<button id="reward-ad-btn" style="
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 2147483647; /* Maximum possible z-index */
-  padding: 14px;
-  font-size: 16px;
-  background: #fff;
-  color: #000;
-  border: 2px solid #000;
-">
-  Watch Ad for Reward
-</button>
 
 <script type="text/javascript">
   document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initialize the widget
+    // Initialize the widget with your specific Widget ID
     const adexiumAds = new AdexiumWidget({
-      wid: '718ba235-5b3f-484a-9c4b-b21e0067ec8b', // Replace with your actual Widget ID
+      wid: '718ba235-5b3f-484a-9c4b-b21e0067ec8b', // Replace with your Widget ID from the dashboard
       adFormat: 'interstitial', // 'interstitial' is good for rewarded ads
-      debug: true // Remove for production
+      debug: true // Remove or set to false for production
     });
 
-    // 2. Set up the button click handler
+    // This example assumes you have a button with the ID 'reward-ad-btn'
     const button = document.getElementById('reward-ad-btn');
     button.onclick = () => {
-      // Request an ad when the button is clicked
+      // 1. Request an ad when the user clicks
       adexiumAds.requestAd('interstitial');
     };
 
-    // 3. Listen for when an ad is successfully received
+    // 2. When an ad is received, display it
     adexiumAds.on('adReceived', (ad) => {
-      // An ad is ready, now display it
       adexiumAds.displayAd(ad);
     });
 
-    // 4. Listen for when no ad is available
+    // 3. Handle the case where no ad is available
     adexiumAds.on('noAdFound', () => {
       console.log('No ad available to show right now.');
-      // You can show a message to the player here
     });
 
-    // 5. Listen for when the user closes the ad
+    // 4. Grant the reward when the ad is closed by the user
     adexiumAds.on('adClosed', () => {
-      console.log('Ad was closed.');
-      // Grant the player their reward here!
+      console.log('Ad was closed. Granting reward!');
+      // Add your code here to reward the player
     });
   });
 </script>
