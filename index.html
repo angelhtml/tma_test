@@ -4,7 +4,6 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
 		<title>TMA</title>
-		<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 		<style>
 html, body, #canvas {
 	margin: 0;
@@ -96,63 +95,7 @@ body {
 <link rel="manifest" href="index.manifest.json">
 
 	</head>
-
-
-
-	
-
-
-	
 	<body>
-		<!-- Put this just before </body> in your EXPORTED index.html -->
-<button id="ad-test-btn" style="position:fixed;bottom:20px;right:20px;z-index:2147483647;padding:14px 20px;font-size:16px;background:#fff;color:#000;border:2px solid #000;border-radius:8px;">
-  Watch Ad Test
-</button>
-
-
-		<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-
-<script>
-(function () {
-  var btn = document.getElementById("ad-test-btn");
-
-  btn.onclick = function () {
-    if (typeof window.Adsgram === "undefined") {
-      btn.textContent = "SDK NOT LOADED (blocked?)";
-      return;
-    }
-    try {
-      var AdController = window.Adsgram.init({
-        blockId: "59304",
-        debug: true
-      });
-      btn.textContent = "Loading ad...";
-      AdController.show()
-        .then(function (result) {
-          console.log("AD SUCCESS", result);
-          btn.textContent = "AD SUCCESS ✅";
-        })
-        .catch(function (error) {
-          console.error("AD ERROR", error);
-          btn.textContent = "AD ERROR ❌";
-        });
-    } catch (e) {
-      console.error("INIT ERROR", e);
-      btn.textContent = "INIT ERROR ❌";
-    }
-  };
-})();
-</script>
-
-
-
-
-
-
-
-
-
-		
 		<canvas id="canvas">
 			Your browser does not support the canvas tag.
 		</canvas>
@@ -272,32 +215,46 @@ const engine = new Engine(GODOT_CONFIG);
 		}, displayFailureNotice);
 	}
 }());
-
-
-			const AdController = window.Adsgram.init({ 
-    blockId: "59304" // Replace with your actual block ID
-});
-
-
-
-			AdController.show().then((result) => {
-    // The ad was watched to the end (or closed in interstitial format)
-    // Add your code here to reward the player, e.g., give a coin or extra life
-    console.log("Ad watched successfully", result);
-}).catch((result) => {
-    // The user skipped the ad or an error occurred
-    // Handle this case, e.g., show a message "Ad not completed"
-    console.log("Ad was not completed", result);
-});
-
-			console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 		</script>
 
 
 
 
-		<script src="//cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init()</script>
+
+
+
+
+
+
+
+
+
+
+
+		<!-- Load Adexium SDK -->
+<script type="text/javascript" src="https://cdn.adexium.tech/assets/js/tg-ads-co-widget.min.js"></script>
+
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', () => {
+    const adexiumAds = new AdexiumWidget({
+      wid: '718ba235-5b3f-484a-9c4b-b21e0067ec8b', // Replace with your actual Widget ID
+      adFormat: 'push-like', // or 'interstitial'
+      // The first ad will appear 5 seconds after the Mini App opens
+      firstAdImpressionIntervalInSeconds: 5,
+      // Subsequent ads will appear every 100 seconds
+      adImpressionIntervalInSeconds: 100,
+      // Keep true for testing to get TEST ads. MUST remove for production.
+      debug: true,
+      isFullScreen: false
+    });
+
+    // This starts the automatic ad timer
+    adexiumAds.autoMode();
+  });
+</script>
+
+
+
 
 
 
