@@ -1,282 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
-		<title>TMA</title>
-		<style>
-html, body, #canvas {
-	margin: 0;
-	padding: 0;
-	border: 0;
-}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Godot Game</title>
 
-body {
-	color: white;
-	background-color: black;
-	overflow: hidden;
-	touch-action: none;
-}
+    <!-- Telegram WebApp script (required) -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-#canvas {
-	display: block;
-}
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+        /* The button is forced above the Godot canvas */
+        #reward-ad-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2147483647; /* max possible */
+            padding: 14px 22px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            color: #000000;
+            border: 2px solid #000000;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        #reward-ad-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        /* Small on-screen status label so you can see what happens on mobile */
+        #ad-status {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            z-index: 2147483647;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-family: monospace;
+            background: rgba(0,0,0,0.7);
+            color: #00ff88;
+            border-radius: 6px;
+            max-width: 80vw;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
 
-#canvas:focus {
-	outline: none;
-}
+    <!-- 1) Create the UI FIRST so it exists even if the SDK fails -->
+    <button id="reward-ad-btn">Watch Ad for Reward</button>
+    <div id="ad-status">initializing…</div>
 
-#status, #status-splash, #status-progress {
-	position: absolute;
-	left: 0;
-	right: 0;
-}
+    <!-- 2) Godot will inject its canvas here (the export adds it) -->
+    <!--    Do not remove the Godot engine script tag that Godot added below -->
 
-#status, #status-splash {
-	top: 0;
-	bottom: 0;
-}
+    <!-- 3) Load Adexium SDK AFTER the button exists -->
+    <script src="https://cdn.adexium.tech/assets/js/tg-ads-co-widget.min.js"></script>
 
-#status {
-	background-color: #242424;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	visibility: hidden;
-}
+    <script>
+    (function () {
+        "use strict";
 
-#status-splash {
-	max-height: 100%;
-	max-width: 100%;
-	margin: auto;
-}
+        var WIDGET_ID = "718ba235-5b3f-484a-9c4b-b21e0067ec8b"; // <-- CHANGE THIS
+        var DEBUG     = true;                   // <-- CHANGE THIS to false for production
 
-#status-splash.show-image--false {
-	display: none;
-}
+        var btn    = document.getElementById("reward-ad-btn");
+        var status = document.getElementById("ad-status");
+        var adexiumAds = null;
+        var adReady = false;
+        var isShowing = false;
 
-#status-splash.fullsize--true {
-	height: 100%;
-	width: 100%;
-	object-fit: contain;
-}
+        function log(msg) {
+            console.log("[ADE][JS] " + msg);
+            status.textContent = msg;
+        }
 
-#status-splash.use-filter--false {
-	image-rendering: pixelated;
-}
+        function setBtn(text, disabled) {
+            btn.textContent = text;
+            btn.disabled = !!disabled;
+        }
 
-#status-progress, #status-notice {
-	display: none;
-}
+        // --- Telegram readiness ---
+        try {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+                log("Telegram WebApp ready");
+            } else {
+                log("Not inside Telegram (or telegram-web-app.js failed)");
+            }
+        } catch (e) {
+            console.error(e);
+        }
 
-#status-progress {
-	bottom: 10%;
-	width: 50%;
-	margin: 0 auto;
-}
+        // --- Adexium init ---
+        if (typeof window.AdexiumWidget === "undefined") {
+            log("Adexium SDK NOT loaded (blocked or wrong URL)");
+            setBtn("SDK NOT LOADED", true);
+            return;
+        }
 
-#status-notice {
-	background-color: #5b3943;
-	border-radius: 0.5rem;
-	border: 1px solid #9b3943;
-	color: #e0e0e0;
-	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
-	line-height: 1.3;
-	margin: 0 2rem;
-	overflow: hidden;
-	padding: 1rem;
-	text-align: center;
-	z-index: 1;
-}
-		</style>
-		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
-<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
-<link rel="manifest" href="index.manifest.json">
+        try {
+            adexiumAds = new window.AdexiumWidget({
+                wid: WIDGET_ID,
+                adFormat: "interstitial",
+                debug: DEBUG
+            });
 
-	</head>
-	<body>
-		<canvas id="canvas">
-			Your browser does not support the canvas tag.
-		</canvas>
+            // Prefetch an ad so it's ready when the player clicks
+            adexiumAds.requestAd("interstitial");
+            log("SDK init OK — requesting ad…");
+        } catch (e) {
+            console.error(e);
+            log("INIT ERROR: " + e.message);
+            setBtn("INIT ERROR", true);
+            return;
+        }
 
-		<noscript>
-			Your browser does not support JavaScript.
-		</noscript>
+        // --- Events ---
+        adexiumAds.on("adReceived", function (ad) {
+            adReady = true;
+            setBtn("Watch Ad for Reward", false);
+            log("Ad received ✅ (ready to show)");
+        });
 
-		<div id="status">
-			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
-			<progress id="status-progress"></progress>
-			<div id="status-notice"></div>
-		</div>
+        adexiumAds.on("noAdFound", function () {
+            adReady = false;
+            setBtn("No ad available", false);
+            log("No ad found (retry in a few seconds)");
+            // Try again after 15s
+            setTimeout(function () {
+                try { adexiumAds.requestAd("interstitial"); } catch (e) {}
+                setBtn("Watch Ad for Reward", false);
+            }, 15000);
+        });
 
-		<script src="index.js"></script>
-		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":98556,"index.wasm":38057390},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
-const GODOT_THREADS_ENABLED = false;
-const engine = new Engine(GODOT_CONFIG);
+        adexiumAds.on("adClosed", function () {
+            isShowing = false;
+            setBtn("Watch Ad for Reward", false);
+            log("Ad closed — GRANT REWARD HERE 🎁");
+            // === PUT YOUR REWARD LOGIC HERE ===
+            // Example: call a Godot function via JavaScriptBridge
+            // window.rewardPlayer && window.rewardPlayer();
 
-(function () {
-	const statusOverlay = document.getElementById('status');
-	const statusProgress = document.getElementById('status-progress');
-	const statusNotice = document.getElementById('status-notice');
+            // Prefetch the next ad
+            setTimeout(function () {
+                try { adexiumAds.requestAd("interstitial"); } catch (e) {}
+            }, 1000);
+        });
 
-	let initializing = true;
-	let statusMode = '';
+        // --- Button click ---
+        btn.addEventListener("click", function () {
+            if (isShowing) return;
+            if (!adReady) {
+                log("No ad ready yet — requesting…");
+                try { adexiumAds.requestAd("interstitial"); } catch (e) {}
+                return;
+            }
+            isShowing = true;
+            setBtn("Showing ad…", true);
+            try {
+                adexiumAds.displayAd();
+            } catch (e) {
+                console.error(e);
+                isShowing = false;
+                setBtn("Watch Ad for Reward", false);
+                log("DISPLAY ERROR: " + e.message);
+            }
+        });
 
-	function setStatusMode(mode) {
-		if (statusMode === mode || !initializing) {
-			return;
-		}
-		if (mode === 'hidden') {
-			statusOverlay.remove();
-			initializing = false;
-			return;
-		}
-		statusOverlay.style.visibility = 'visible';
-		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
-		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
-		statusMode = mode;
-	}
+        // Enable the button
+        setBtn("Watch Ad for Reward", false);
+        log("Button ready — click to test");
+    })();
+    </script>
 
-	function setStatusNotice(text) {
-		while (statusNotice.lastChild) {
-			statusNotice.removeChild(statusNotice.lastChild);
-		}
-		const lines = text.split('\n');
-		lines.forEach((line) => {
-			statusNotice.appendChild(document.createTextNode(line));
-			statusNotice.appendChild(document.createElement('br'));
-		});
-	}
+    <!-- ⚠️ IMPORTANT: Godot's own engine <script> tag goes BELOW this comment. -->
+    <!-- When you export, Godot appends its startup script here. -->
+    <!-- Make sure you keep Godot's script tag in the file. -->
 
-	function displayFailureNotice(err) {
-		console.error(err);
-		if (err instanceof Error) {
-			setStatusNotice(err.message);
-		} else if (typeof err === 'string') {
-			setStatusNotice(err);
-		} else {
-			setStatusNotice('An unknown error occurred.');
-		}
-		setStatusMode('notice');
-		initializing = false;
-	}
-
-	const missing = Engine.getMissingFeatures({
-		threads: GODOT_THREADS_ENABLED,
-	});
-
-	if (missing.length !== 0) {
-		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
-			let serviceWorkerRegistrationPromise;
-			try {
-				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
-			} catch (err) {
-				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
-			}
-			// There's a chance that installing the service worker would fix the issue
-			Promise.race([
-				serviceWorkerRegistrationPromise.then((registration) => {
-					if (registration != null) {
-						return Promise.reject(new Error('Service worker already exists.'));
-					}
-					return registration;
-				}).then(() => engine.installServiceWorker()),
-				// For some reason, `getRegistration()` can stall
-				new Promise((resolve) => {
-					setTimeout(() => resolve(), 2000);
-				}),
-			]).then(() => {
-				// Reload if there was no error.
-				window.location.reload();
-			}).catch((err) => {
-				console.error('Error while registering service worker:', err);
-			});
-		} else {
-			// Display the message as usual
-			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
-			displayFailureNotice(missingMsg + missing.join('\n'));
-		}
-	} else {
-		setStatusMode('progress');
-		engine.startGame({
-			'onProgress': function (current, total) {
-				if (current > 0 && total > 0) {
-					statusProgress.value = current;
-					statusProgress.max = total;
-				} else {
-					statusProgress.removeAttribute('value');
-					statusProgress.removeAttribute('max');
-				}
-			},
-		}).then(() => {
-			setStatusMode('hidden');
-		}, displayFailureNotice);
-	}
-}());
-		</script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- Load the Adexium Mini App Widget SDK -->
-<script type="text/javascript" src="https://cdn.adexium.tech/assets/js/tg-ads-co-widget.min.js"></script>
-
-<script type="text/javascript">
-  document.addEventListener('DOMContentLoaded', () => {
-    // Initialize the widget with your specific Widget ID
-    const adexiumAds = new AdexiumWidget({
-      wid: '718ba235-5b3f-484a-9c4b-b21e0067ec8b', // Replace with your Widget ID from the dashboard
-      adFormat: 'interstitial', // 'interstitial' is good for rewarded ads
-      debug: true // Remove or set to false for production
-    });
-
-    // This example assumes you have a button with the ID 'reward-ad-btn'
-    const button = document.getElementById('reward-ad-btn');
-    button.onclick = () => {
-      // 1. Request an ad when the user clicks
-      adexiumAds.requestAd('interstitial');
-    };
-
-    // 2. When an ad is received, display it
-    adexiumAds.on('adReceived', (ad) => {
-      adexiumAds.displayAd(ad);
-    });
-
-    // 3. Handle the case where no ad is available
-    adexiumAds.on('noAdFound', () => {
-      console.log('No ad available to show right now.');
-    });
-
-    // 4. Grant the reward when the ad is closed by the user
-    adexiumAds.on('adClosed', () => {
-      console.log('Ad was closed. Granting reward!');
-      // Add your code here to reward the player
-    });
-  });
-</script>
-
-
-
-
-
-
-
-
-
-		
-	</body>
+</body>
 </html>
-
