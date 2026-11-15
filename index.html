@@ -231,25 +231,47 @@ const engine = new Engine(GODOT_CONFIG);
 
 
 
-		<!-- Load Adexium SDK -->
+<!-- Load Adexium SDK -->
 <script type="text/javascript" src="https://cdn.adexium.tech/assets/js/tg-ads-co-widget.min.js"></script>
+
+<!-- Your Game's Button -->
+<button id="reward-ad-btn" style="position:fixed; bottom:20px; right:20px; z-index:2147483647; padding:14px; font-size:16px;">
+  Watch Ad for Reward
+</button>
 
 <script type="text/javascript">
   document.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialize the widget
     const adexiumAds = new AdexiumWidget({
       wid: '718ba235-5b3f-484a-9c4b-b21e0067ec8b', // Replace with your actual Widget ID
-      adFormat: 'push-like', // or 'interstitial'
-      // The first ad will appear 5 seconds after the Mini App opens
-      firstAdImpressionIntervalInSeconds: 5,
-      // Subsequent ads will appear every 100 seconds
-      adImpressionIntervalInSeconds: 100,
-      // Keep true for testing to get TEST ads. MUST remove for production.
-      debug: true,
-      isFullScreen: false
+      adFormat: 'interstitial', // 'interstitial' is good for rewarded ads
+      debug: true // Remove for production
     });
 
-    // This starts the automatic ad timer
-    adexiumAds.autoMode();
+    // 2. Set up the button click handler
+    const button = document.getElementById('reward-ad-btn');
+    button.onclick = () => {
+      // Request an ad when the button is clicked
+      adexiumAds.requestAd('interstitial');
+    };
+
+    // 3. Listen for when an ad is successfully received
+    adexiumAds.on('adReceived', (ad) => {
+      // An ad is ready, now display it
+      adexiumAds.displayAd(ad);
+    });
+
+    // 4. Listen for when no ad is available
+    adexiumAds.on('noAdFound', () => {
+      console.log('No ad available to show right now.');
+      // You can show a message to the player here
+    });
+
+    // 5. Listen for when the user closes the ad
+    adexiumAds.on('adClosed', () => {
+      console.log('Ad was closed.');
+      // Grant the player their reward here!
+    });
   });
 </script>
 
