@@ -217,6 +217,51 @@ const engine = new Engine(GODOT_CONFIG);
 	}
 }());
 		</script>
+
+
+
+
+
+
+
+
+		<script>
+    // 1. Initialize the OGP SDK
+    const ogp = new OpenGameSDK({
+        ui: { usePointsWidget: true }, // Shows a built-in points display
+        logLevel: 2 // Set to 2 for warnings and errors
+    });
+
+    // 2. Wait for the SDK to be ready
+    ogp.on('OnReady', () => {
+        console.log('OGP SDK is ready!');
+    });
+
+    // 3. Initialize with your Game ID
+    ogp.init({ gameId: 'YOUR_GAME_ID_HERE' });
+
+    // 4. Define global functions for Godot to call
+    window.ogpAddPoints = function(points) {
+        ogp.addPoints(points);
+    };
+
+    window.ogpSavePoints = async function(score) {
+        try {
+            await ogp.savePoints(score);
+            console.log('Score saved successfully!');
+        } catch (error) {
+            console.error('Failed to save score:', error);
+        }
+    };
+</script>
+
+
+
+
+
+
+
+		
 	</body>
 </html>
 
